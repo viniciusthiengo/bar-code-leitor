@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fl_scanner"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_alignParentTop="true"
+    android:background="@color/colorPrimary"
+    tools:context=".MainActivity">
+
+    <me.dm7.barcodescanner.zbar.ZBarScannerView
+        android:id="@+id/z_bar_scanner"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ImageButton
+        android:id="@+id/ib_fullscreen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/image_button_black"
+        android:contentDescription="Colocar em modo fullscreen"
+        android:onClick="closeFullscreen"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_fullscreen_white_24dp"
+        android:tint="@android:color/white" />
+
+    <ImageButton
+        android:id="@+id/ib_lock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:background="@drawable/image_button_black"
+        android:contentDescription="Travar leitura de barra de código"
+        android:onClick="lockUnlock"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_lock_open_white_24dp"
+        android:tint="@android:color/white" />
+</FrameLayout>
