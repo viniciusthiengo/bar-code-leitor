@@ -3,6 +3,8 @@ package thiengo.com.br.barcodeleitor
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.res.Configuration
+import android.hardware.Camera
 import android.net.Uri
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -14,6 +16,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import me.dm7.barcodescanner.zbar.BarcodeFormat
 import me.dm7.barcodescanner.zbar.Result
 import me.dm7.barcodescanner.zbar.ZBarScannerView
+import me.dm7.barcodescanner.zxing.ZXingScannerView
 import pub.devrel.easypermissions.EasyPermissions
 import pub.devrel.easypermissions.PermissionRequest
 import thiengo.com.br.barcodeleitor.util.Database
@@ -149,6 +152,10 @@ class MainActivity : AppCompatActivity(),
          * a permissão de uso desse recurso.
          * */
         z_bar_scanner.startCamera()
+        //z_bar_scanner.setAutoFocus(true)
+        //z_bar_scanner.rotation = 0.0F
+
+        //Log.i("LOG", "Rotation: ${z_bar_scanner.rotation}");
     }
 
     private fun askCameraPermission(){

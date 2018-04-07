@@ -8,6 +8,7 @@ import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import kotlinx.android.synthetic.main.activity_main.*
+import me.dm7.barcodescanner.zbar.BarcodeFormat
 import me.dm7.barcodescanner.zbar.Result
 import me.dm7.barcodescanner.zbar.ZBarScannerView
 import thiengo.com.br.barcodeleitor.util.Database
@@ -47,12 +48,23 @@ class FullscreenActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
         z_bar_scanner.setResultHandler(this)
-        z_bar_scanner.startCamera()
+        //z_bar_scanner.setFormats( mutableListOf(BarcodeFormat.CODE128) )
+        //z_bar_scanner.setAutoFocus(true)
+        //z_bar_scanner.flash = true
+        //z_bar_scanner.startCamera()
     }
 
     override fun onPause() {
         super.onPause()
         z_bar_scanner.stopCamera()
+    }
+
+    /*
+     * Para que o compartamento de exit activity do
+     * domínio do problema seja respeitado.
+     * */
+    override fun onBackPressed() {
+        closeFullscreen()
     }
 
 
@@ -106,7 +118,7 @@ class FullscreenActivity : AppCompatActivity(),
      * Para voltar ao modo "não fullscreen" antes que algum
      * código de barra seja interpretado.
      * */
-    fun closeFullscreen(view: View){
+    fun closeFullscreen(view: View? = null){
         finish( Intent(), Activity.RESULT_CANCELED )
     }
 

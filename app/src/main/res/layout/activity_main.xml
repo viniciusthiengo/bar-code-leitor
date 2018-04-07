@@ -18,6 +18,7 @@
             android:layout_alignParentTop="true">
 
             <me.dm7.barcodescanner.zbar.ZBarScannerView
+                android:layout_gravity="top|end"
                 android:id="@+id/z_bar_scanner"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
