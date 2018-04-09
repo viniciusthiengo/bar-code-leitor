@@ -9,19 +9,22 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
 
         <FrameLayout
             android:id="@+id/fl_scanner"
             android:layout_width="match_parent"
-            android:layout_height="235dp"
+            android:layout_height="250dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
             android:layout_alignParentTop="true">
 
-            <me.dm7.barcodescanner.zbar.ZBarScannerView
-                android:layout_gravity="top|end"
-                android:id="@+id/z_bar_scanner"
+            <me.dm7.barcodescanner.zxing.ZXingScannerView
+                android:id="@+id/z_xing_scanner"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="250dp"
+                android:layout_gravity="top|end" />
+
 
             <ImageButton
                 android:id="@+id/ib_fullscreen"
@@ -37,6 +40,22 @@
                 android:padding="8dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_fullscreen_white_24dp"
+                android:tint="@android:color/white" />
+
+            <ImageButton
+                android:id="@+id/ib_flashlight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_marginBottom="57dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:background="@drawable/image_button_black"
+                android:contentDescription="Ligar flash"
+                android:onClick="flashLight"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_flashlight_off_white_24dp"
                 android:tint="@android:color/white" />
 
             <ImageButton
@@ -98,6 +117,7 @@
             android:text="Conteúdo da última leitura:" />
 
         <LinearLayout
+            android:background="@android:color/white"
             android:id="@+id/ll_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

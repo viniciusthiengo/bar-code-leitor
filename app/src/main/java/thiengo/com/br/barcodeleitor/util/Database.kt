@@ -1,53 +1,46 @@
 package thiengo.com.br.barcodeleitor.util
 
 import android.content.Context
-import me.dm7.barcodescanner.zbar.BarcodeFormat
-import me.dm7.barcodescanner.zbar.Result
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.Result
 
 class Database {
     companion object {
 
         private val SP_NAME = "SP"
-        val KEY_CONTENTS = "contents"
-        val KEY_BARCODE_ID = "barcode_id"
-        val DEFAULT_BARCODE_ID = -1
-        val KEY_IS_LOCKED = "is_locked"
+        val KEY_NAME = "text"
+        val KEY_BARCODE_NAME = "barcode_name"
+        val DEFAULT_BARCODE_NAME = ""
+
+        val KEY_IS_LIGHTENED = "is_lightened"
 
         fun saveResult(context: Context, result: Result?){
             val sp = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-            val contents = result?.contents
-            val barcodeId = result?.barcodeFormat?.id ?: DEFAULT_BARCODE_ID
+            val contents = result?.text
+            val barcodeName = result?.barcodeFormat?.name ?: DEFAULT_BARCODE_NAME
 
             sp.edit()
-                .putString(KEY_CONTENTS, contents)
-                .putInt(KEY_BARCODE_ID, barcodeId)
+                .putString(KEY_NAME, contents)
+                .putString(KEY_BARCODE_NAME, barcodeName)
                 .apply()
-        }
-
-        fun saveIsLocked(context: Context, isLocked: Boolean){
-            val sp = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-
-            sp.edit()
-                    .putBoolean(KEY_IS_LOCKED, isLocked)
-                    .apply()
         }
 
         fun getSavedResult(context: Context): Result? {
             val sp = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-            val result = Result()
+            val text = sp.getString(KEY_NAME, null)
 
-            result.contents = sp.getString(KEY_CONTENTS, null)
-            result.barcodeFormat = BarcodeFormat.getFormatById( sp.getInt(KEY_BARCODE_ID, DEFAULT_BARCODE_ID) )
-
-            if( result.contents == null ){
+            if( text == null ){
                 return null
             }
-            return result
-        }
 
-        fun getSavedIsLocked(context: Context): Boolean {
-            val sp = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-            return sp.getBoolean(KEY_IS_LOCKED, false)
+            val barcodeFormat = BarcodeFormat.valueOf( sp.getString(KEY_BARCODE_NAME, DEFAULT_BARCODE_NAME) )
+            val result = Result(
+                text,
+                text.toByteArray(),
+                arrayOf(),
+                barcodeFormat )
+
+            return result
         }
     }
 }

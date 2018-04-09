@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">BarCodeLeitor</string>
+    <string name="nothing_read">Nada lido ainda</string>
 </resources>

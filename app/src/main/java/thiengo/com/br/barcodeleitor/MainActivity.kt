@@ -3,33 +3,27 @@ package thiengo.com.br.barcodeleitor
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.content.res.Configuration
-import android.hardware.Camera
 import android.net.Uri
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.webkit.URLUtil
 import kotlinx.android.synthetic.main.activity_main.*
-import me.dm7.barcodescanner.zbar.BarcodeFormat
-import me.dm7.barcodescanner.zbar.Result
-import me.dm7.barcodescanner.zbar.ZBarScannerView
 import me.dm7.barcodescanner.zxing.ZXingScannerView
 import pub.devrel.easypermissions.EasyPermissions
 import pub.devrel.easypermissions.PermissionRequest
-import thiengo.com.br.barcodeleitor.util.Database
-import thiengo.com.br.barcodeleitor.util.unrecognizedCode
+import thiengo.com.br.barcodeleitor.util.*
 
 
 class MainActivity : AppCompatActivity(),
-    ZBarScannerView.ResultHandler,
-    EasyPermissions.PermissionCallbacks {
+        ZXingScannerView.ResultHandler,
+        EasyPermissions.PermissionCallbacks {
 
     val REQUEST_CODE_CAMERA = 182
     val REQUEST_CODE_FULLSCREEN = 184
     var isLocked = false
+    var isLightened = false
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,56 +31,53 @@ class MainActivity : AppCompatActivity(),
         setContentView(R.layout.activity_main)
 
         askCameraPermission()
+        lastResultVerification()
+    }
 
-        /*
-         * Caso tenha algum último resultado lido e
-         * salvo no SharedPreferences, utilizamos
-         * este último resultado já em tela.
-         * */
+    /*
+     * Caso tenha algum último resultado lido e
+     * salvo no SharedPreferences, utilizamos
+     * este último resultado já em tela.
+     * */
+    private fun lastResultVerification(){
         val result = Database.getSavedResult(this)
-        isLocked = Database.getSavedIsLocked(this)
-
         if( result != null ){
-            Log.i("LOG", "${result.contents} - ${result.barcodeFormat.id}")
-            proccessBarcodeResult( result.contents, result.barcodeFormat.id )
+            proccessBarcodeResult( result.text, result.barcodeFormat.name )
         }
-        /*else{
-            /*
-             * Para testes sem necessidade de uso de
-             * câmera.
-             */
-            proccessBarcodeResult()
-        }*/
     }
 
     override fun onResume() {
         super.onResume()
-
         /*
          * Registrando a atividade para que ela possa
-         * trabalhar os resultados de scan. Como na
-         * documentação, o onResume() é o local ideal
-         * para este registro.
+         * trabalhar os resultados de scan. Seguindo a
+         * documentação, o código entra no onResume().
          * */
-        z_bar_scanner.setResultHandler(this)
+        z_xing_scanner.setResultHandler(this)
 
-        /*
-         * Útil principalmente na volta da
-         * FullscreenActivity.
-         * */
-        if( EasyPermissions.hasPermissions(this, Manifest.permission.CAMERA) ){
-            z_bar_scanner.startCamera()
+        restartCameraIfInactive()
+    }
+
+    /*
+     * Método necessário para que a câmera volte a
+     * funcionar, tendo em mente que a partir do onPause()
+     * até mesmo os recursos destinados a ela, nesta
+     * entidade, foram todos liberados. Lembrando também
+     * que em caso de volta a esta atividade, sem passar
+     * pelo onCreate(), o método onPermissionsGranted()
+     * não será invocado novamente assim é preciso restart
+     * a câmera caso ela já não esteja ativa.
+     * */
+    private fun restartCameraIfInactive(){
+        if( !z_xing_scanner.isCameraStarted()
+                && EasyPermissions.hasPermissions(this, Manifest.permission.CAMERA) ){
+            startCamera()
         }
     }
 
     override fun onPause() {
         super.onPause()
-
-        /*
-         * Para liberação de recursos, pare a câmera
-         * logo no onPause().
-         * */
-        z_bar_scanner.stopCamera()
+        z_xing_scanner.stopCameraForAllDevices()
     }
 
     /*
@@ -98,23 +89,18 @@ class MainActivity : AppCompatActivity(),
         super.onActivityResult(requestCode, resultCode, data)
 
         if( requestCode == REQUEST_CODE_FULLSCREEN ){
-
             /*
-             * Garantindo que o botão de lock e o status
-             * controlado por ele continuem com os valores
-             * corretos.
+             * Garantindo que o botão de luz de flash e o
+             * status controlado por ele continuem com os
+             * valores corretos.
              * */
-            isLocked = !data!!.getBooleanExtra(Database.KEY_IS_LOCKED, false)
-            lockUnlock()
+            isLightened = !data!!.getBooleanExtra(Database.KEY_IS_LIGHTENED, false)
+            flashLight()
 
             if( resultCode == Activity.RESULT_OK ){
                 proccessBarcodeResult(
-                    data.getStringExtra(Database.KEY_CONTENTS),
-                    data.getIntExtra(Database.KEY_BARCODE_ID, Database.DEFAULT_BARCODE_ID) )
-            }
-            else if( resultCode == Activity.RESULT_CANCELED ){
-                isLocked = !data.getBooleanExtra(Database.KEY_IS_LOCKED, false)
-                lockUnlock()
+                    data.getStringExtra(Database.KEY_NAME),
+                    data.getStringExtra(Database.KEY_BARCODE_NAME) )
             }
         }
     }
@@ -122,131 +108,133 @@ class MainActivity : AppCompatActivity(),
 
     /* *** Algoritmos de requisição de permissão *** */
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray ) {
+            requestCode: Int,
+            permissions: Array<String>,
+            grantResults: IntArray ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         /* Encaminhando resultados para EasyPermissions */
         EasyPermissions.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults,
-            this )
+                requestCode,
+                permissions,
+                grantResults,
+                this )
     }
 
     override fun onPermissionsDenied(
-        requestCode: Int,
-        perms: MutableList<String>) {
+            requestCode: Int,
+            perms: MutableList<String>) {
 
         askCameraPermission()
     }
 
-    override fun onPermissionsGranted(
-        requestCode: Int,
-        perms: MutableList<String>) {
-
-        /*
-         * Iniciando o funcionamento da câmera na View
-         * ZBarScannerView somente depois de assegurada
-         * a permissão de uso desse recurso.
-         * */
-        z_bar_scanner.startCamera()
-        //z_bar_scanner.setAutoFocus(true)
-        //z_bar_scanner.rotation = 0.0F
-
-        //Log.i("LOG", "Rotation: ${z_bar_scanner.rotation}");
-    }
-
     private fun askCameraPermission(){
         EasyPermissions.requestPermissions(
-            PermissionRequest.Builder(this, REQUEST_CODE_CAMERA, Manifest.permission.CAMERA)
-                .setRationale("A permissão de uso de camera é necessária para que o aplicativo funcione.")
-                .setPositiveButtonText("Ok")
-                .setNegativeButtonText("Cancelar")
-                .build() )
+                PermissionRequest.Builder(this, REQUEST_CODE_CAMERA, Manifest.permission.CAMERA)
+                        .setRationale("A permissão de uso de camera é necessária para que o aplicativo funcione.")
+                        .setPositiveButtonText("Ok")
+                        .setNegativeButtonText("Cancelar")
+                        .build() )
+    }
+
+    override fun onPermissionsGranted(
+            requestCode: Int,
+            perms: MutableList<String>) {
+
+        startCamera()
+    }
+
+    private fun startCamera(){
+        z_xing_scanner.startCameraForAllDevices(this)
+
+        /*
+         * É seguro invocar o algoritmo abaixo somente
+         * depois de a camera ter sido iniciada.
+         * */
+        /*if( z_xing_scanner.isShown && !z_xing_scanner.isFlashSupported() ){
+            z_xing_scanner.visibility = View.VISIBLE
+        }
+        else{
+            z_xing_scanner.visibility = View.GONE
+        }*/
     }
 
 
     /* *** Algoritmos de interpretação de barra de código *** */
-    override fun handleResult(result: Result?) {
-        /* Padrão Cláusula */
+    override fun handleResult(result: com.google.zxing.Result?) {
+        /*
+         * Padrão Cláusula de Guarda - Caso o resultado seja
+         * null, limpa a tela, se houver um último dado lido,
+         * apresente uma mensagem e finaliza o processamento
+         * do método handleResult().
+         * */
         if( result == null ){
-            unrecognizedCode(this, {clearContent()})
+            unrecognizedCode(this, { clearContent() })
             return
         }
 
         proccessBarcodeResult(
-            result.contents,
-            result.barcodeFormat.id)
+                result.text,
+                result.barcodeFormat.name)
 
         /*
-         * Retomar a verificação de códigos de barra com
-         * a câmera.
+         * Caso este trecho não esteja aqui, a câmera
+         * permanecerá travada, como em stopCameraPreview().
          * */
-        z_bar_scanner.resumeCameraPreview(this)
+        if( !isLocked ){
+            z_xing_scanner.resumeCameraPreview(this)
+        }
     }
 
     private fun proccessBarcodeResult(
-        content: String? = null,
-        barcodeFormatId: Int? = null ){
-
+            text: String? = null,
+            barcodeFormatName: String = "QRCODE" ){
         /*
          * Padrão Claúsula de Guarda sendo utilizado para
          * que a leitura do código não continue caso o
-         * usuário tenha trancado está funcionalidade.
+         * usuário tenha travado a CameraPreview.
          * */
         if( isLocked ){
             return
         }
 
-        val result = Result()
-        result.contents = content
-        result.barcodeFormat = BarcodeFormat.getFormatById(barcodeFormatId ?: -1)
+        val result = com.google.zxing.Result(
+            text,
+            text!!.toByteArray(), /* Somente para ter algo */
+            arrayOf(), /* Somente para ter algo */
+            com.google.zxing.BarcodeFormat.valueOf(barcodeFormatName))
 
-        /*/*
-         * Para testes sem o uso real da câmera.
-         * */
-        if(content == null || barcodeFormatId == null){
-            result.contents = "Lorem Ipsum."
-            result.contents = "http://www.thiengo.com.br"
-            result.contents = "thiengocalopsita@gmail.com"
-            result.contents = "5527999887766"
-            result.barcodeFormat = BarcodeFormat.CODABAR
-        }*/
-
+        /* Salvando o último resultado lido. */
         Database.saveResult(this, result)
-        Database.saveIsLocked(this, isLocked)
 
-        tv_content.text = result.contents
+        /* Modificando interface do usuário. */
+        tv_content.text = result.text
         tv_bar_code_type.text = "Tipo barra de código: ${result.barcodeFormat.name}"
-
         processButtonOpen(result)
     }
 
     /*
-     * Verificação de tipo de conteúdo lido em barra
-     * de código para o correto trabalho com o botão
-     * de ação.
+     * Verificação de tipo de conteúdo lido em código de
+     * barra para o correto trabalho com o botão de ação.
      * */
-    private fun processButtonOpen(result: Result){
+    private fun processButtonOpen(result: com.google.zxing.Result){
         when{
-            URLUtil.isValidUrl(result.contents) ->
+            URLUtil.isValidUrl(result.text) ->
                 setButtonOpenAction("ABRIR URL") {
                     val i = Intent(Intent.ACTION_VIEW)
-                    i.data = Uri.parse(result.contents)
+                    i.data = Uri.parse(result.text)
                     startActivity(i)
                 }
-            Patterns.EMAIL_ADDRESS.matcher(result.contents).matches() ->
+            Patterns.EMAIL_ADDRESS.matcher(result.text).matches() ->
                 setButtonOpenAction("ABRIR EMAIL") {
                     val i = Intent(Intent.ACTION_VIEW)
-                    i.data = Uri.parse("mailto:?body=${result.contents}")
+                    i.data = Uri.parse("mailto:?body=${result.text}")
                     startActivity(i)
                 }
-            Patterns.PHONE.matcher(result.contents).matches() ->
+            Patterns.PHONE.matcher(result.text).matches() ->
                 setButtonOpenAction("LIGAR") {
                     val i = Intent(Intent.ACTION_DIAL)
-                    i.data = Uri.parse("tel:${result.contents}")
+                    i.data = Uri.parse("tel:${result.text}")
                     startActivity(i)
                 }
             else -> setButtonOpenAction(status = false)
@@ -275,7 +263,7 @@ class MainActivity : AppCompatActivity(),
      * Método para limpar a interface do usuário.
      * */
     fun clearContent(view: View? = null){
-        tv_content.text = "Nada lido ainda"
+        tv_content.text = getString(R.string.nothing_read)
         tv_bar_code_type.visibility = View.GONE
         bt_open.visibility = View.GONE
         Database.saveResult(this, null)
@@ -286,14 +274,46 @@ class MainActivity : AppCompatActivity(),
      * em toda a tela do device.
      * */
     fun openFullscreen(view: View){
-        /* Cláusula de Gurda */
+        /*
+         * Padrão Cláusula de Guarda - Sem permissão
+         * de câmera: não abre atividade.
+         * */
         if( !EasyPermissions.hasPermissions(this, Manifest.permission.CAMERA) ){
             return
         }
 
+        unlockCamera()
+
         val i = Intent(this, FullscreenActivity::class.java)
-        i.putExtra(Database.KEY_IS_LOCKED, isLocked)
+        i.putExtra(Database.KEY_IS_LIGHTENED, isLightened)
         startActivityForResult(i, REQUEST_CODE_FULLSCREEN)
+    }
+
+    /*
+     * Como o lock não é mantido, o método abaixo é
+     * necessário para que o usuário veja o unlock
+     * ocorrendo, caso esteja a câmera como lock.
+     * */
+    private fun unlockCamera(){
+        isLocked = true
+        lockUnlock()
+    }
+
+    /*
+     * Ativa e desativa a luz de flash do celular caso esteja
+     * disponível no device.
+     * */
+    fun flashLight(view: View? = null){
+        isLightened = !isLightened
+
+        if(isLightened){
+            z_xing_scanner.flash = true
+            ib_flashlight.setImageResource(R.drawable.ic_flashlight_white_24dp)
+        }
+        else{
+            z_xing_scanner.flash = false
+            ib_flashlight.setImageResource(R.drawable.ic_flashlight_off_white_24dp)
+        }
     }
 
     /*
@@ -301,16 +321,46 @@ class MainActivity : AppCompatActivity(),
      * do algoritmo de interpretação de código de barra
      * lido, incluindo a mudança do ícone de apresentação,
      * ao usuário, de status do algoritmo de interpretação de
-     * código.
+     * código. Note que a luz e botão de flash não deve funcionar
+     * se a CameraPreview estiver parada, stopped.
      * */
     fun lockUnlock(view: View? = null){
         isLocked = !isLocked
 
         if(isLocked){
+            /*
+             * Para funcionar deve ser invocado antes do
+             * stopCameraPreview().
+             * */
+            turnOffFlashlight()
+
+            /*
+             * Parar com a verificação de códigos de barra com
+             * a câmera.
+             * */
+            z_xing_scanner.stopCameraPreview()
             ib_lock.setImageResource(R.drawable.ic_lock_white_24dp)
+            ib_flashlight.isEnabled = false
         }
         else{
+            /*
+             * Retomar a verificação de códigos de barra com
+             * a câmera.
+             * */
+            z_xing_scanner.resumeCameraPreview(this)
             ib_lock.setImageResource(R.drawable.ic_lock_open_white_24dp)
+            ib_flashlight.isEnabled = true
         }
+    }
+
+    /*
+     * Método necessário, pois não faz sentido deixar a luz
+     * de flash ligada quando a tela não mais está lendo
+     * códigos, está travada. Método somente invocado quando
+     * o lock de tela ocorre.
+     * */
+    private fun turnOffFlashlight(){
+        isLightened = true
+        flashLight()
     }
 }
