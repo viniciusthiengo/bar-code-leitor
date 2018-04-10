@@ -25,6 +25,7 @@
         </activity>
 
         <activity
+            android:configChanges="orientation|screenSize"
             android:name=".FullscreenActivity"
             android:theme="@style/FullscreenTheme" />
 

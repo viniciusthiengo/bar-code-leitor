@@ -1,15 +1,23 @@
 package thiengo.com.br.barcodeleitor.util
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Camera
-import android.util.Log
 import me.dm7.barcodescanner.core.CameraUtils
 import me.dm7.barcodescanner.zxing.ZXingScannerView
 
 
 fun ZXingScannerView.startCameraForAllDevices(context: Context){
     this.confiCameraForAllDevices(context)
+
+    /*
+     * Sem nenhum parâmetro definido em startCamera(),
+     * digo, o parâmetro idCamera, a câmera de ID 0
+     * será a utilizada, ou seja, a câmera de tras
+     * (rear-facing) do device. A câmera da frente
+     * (front-facing) é a de ID 1.
+     * */
     this.startCamera() /* Da API ZXingScannerView */
 
     /*
@@ -21,7 +29,9 @@ fun ZXingScannerView.startCameraForAllDevices(context: Context){
 
 /*
  * Método com algumas configurações iniciais possíveis
- * de serem aplicadas a interface da câmera.
+ * de serem aplicadas a interface da câmera. Todas as
+ * configurações no método a seguir são opcionais e têm
+ * seus valores padrões.
  * */
 private fun ZXingScannerView.confiCameraForAllDevices(context: Context){
     /*
@@ -35,15 +45,24 @@ private fun ZXingScannerView.confiCameraForAllDevices(context: Context){
     // this.setMaskColor(Color.GRAY) /* Cor de todo o restante fora do quadrante de leitura de código. */
 
     /*
-     * Não surtiu efeito algum em testes.
+     * Sem o auto focus como true o poder de leitura de
+     * código de barras reduz consideravelmente,
+     * principalmente em devices que não têm uma câmera
+     * de alta qualidade.
      * */
-    // this.setAutoFocus(true)  /* true é padrão */
+    this.setAutoFocus(true)
 
     /*
      * Tome cuidado com o uso da linha a seguir, pois
      * dependendo da rotação, a leitura perde em eficiência.
      * */
-    // this.rotation = 0.0F /* 0.0F é padrão */
+    this.rotation = 0.0F
+
+    /*
+     * Deve ser utilizado somente para o correto funcionamento
+     * do CameraPreview em devices HUAWEI.
+     * */
+    this.setAspectTolerance(0.5F)
 }
 
 fun ZXingScannerView.stopCameraForAllDevices(){
@@ -92,15 +111,20 @@ fun ZXingScannerView.isCameraStarted(): Boolean{
  * necessária a verificação para a não geração de
  * exception.
  * */
-fun ZXingScannerView.isFlashSupported(): Boolean{
-    val camera = CameraUtils.getCameraInstance()
-    //this.getI
+fun ZXingScannerView.isFlashSupported(context: Context) =
+    context
+        .packageManager
+        .hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)
 
-    camera.reconnect()
-    Log.i("LOG", "1")
-    if( camera != null ){
-        Log.i("LOG", "2")
-        //return CameraUtils.isFlashSupported( camera )
+/*
+ * A ativação e desativação do flash somente pode
+ * ocorrer caso haja suporte a este hardware.
+ * */
+fun ZXingScannerView.enableFlash(
+    context: Context,
+    status: Boolean) {
+
+    if( this.isFlashSupported(context) ){
+        this.flash = status
     }
-    return false
 }

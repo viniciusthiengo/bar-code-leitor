@@ -2,6 +2,7 @@ package thiengo.com.br.barcodeleitor
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
@@ -32,7 +33,7 @@ class FullscreenActivity : AppCompatActivity(),
         setContentView(R.layout.activity_fullscreen)
 
         if( savedInstanceState != null ){
-            isLocked = !savedInstanceState.getBoolean(KEY_IS_LOCKED)
+            isLocked = savedInstanceState.getBoolean(KEY_IS_LOCKED)
         }
     }
 
@@ -44,7 +45,7 @@ class FullscreenActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
         z_xing_scanner.setResultHandler(this)
-        z_xing_scanner.startCameraForAllDevices(this)
+        startCamera()
 
         threadCallWhenCameraIsWorking(z_xing_scanner, {
             runOnUiThread {
@@ -64,9 +65,21 @@ class FullscreenActivity : AppCompatActivity(),
                  * reconstrução de atividade.
                  * */
                 if(isLocked){
-                    isLocked = false
+                    isLocked = !isLocked
                     lockUnlock()
                 }
+
+                /*
+                 * Caso a linha de código abaixo não esteja presente,
+                 * em algumas versões do Android está atividade também
+                 * ficará travada em portrait screen devido ao uso
+                 * desta trava no AndroidManifest.xml, mesmo que a trava
+                 * esteja definida somente para a atividade principal.
+                 * Outra, a invocação da linha abaixo somente pode
+                 * ocorrer depois que a câmera já está em funcionamento
+                 * na tela, caso contrário a câmera não funcionará.
+                 * */
+                setRequestedOrientation( ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR )
             }
         })
     }
@@ -74,6 +87,14 @@ class FullscreenActivity : AppCompatActivity(),
     override fun onPause() {
         super.onPause()
         z_xing_scanner.stopCameraForAllDevices()
+    }
+
+    private fun startCamera(){
+        if( !z_xing_scanner.isFlashSupported(this) ){
+            ib_flashlight.visibility = View.GONE
+        }
+
+        z_xing_scanner.startCameraForAllDevices(this)
     }
 
     /*
@@ -161,11 +182,11 @@ class FullscreenActivity : AppCompatActivity(),
         intent.putExtra(Database.KEY_IS_LIGHTENED, isLightened)
 
         if(isLightened){
-            z_xing_scanner.flash = true
+            z_xing_scanner.enableFlash(this, true)
             ib_flashlight.setImageResource(R.drawable.ic_flashlight_white_24dp)
         }
         else{
-            z_xing_scanner.flash = false
+            z_xing_scanner.enableFlash(this, false)
             ib_flashlight.setImageResource(R.drawable.ic_flashlight_off_white_24dp)
         }
     }

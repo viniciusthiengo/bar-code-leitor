@@ -145,18 +145,11 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun startCamera(){
-        z_xing_scanner.startCameraForAllDevices(this)
-
-        /*
-         * É seguro invocar o algoritmo abaixo somente
-         * depois de a camera ter sido iniciada.
-         * */
-        /*if( z_xing_scanner.isShown && !z_xing_scanner.isFlashSupported() ){
-            z_xing_scanner.visibility = View.VISIBLE
+        if( !z_xing_scanner.isFlashSupported(this) ){
+            ib_flashlight.visibility = View.GONE
         }
-        else{
-            z_xing_scanner.visibility = View.GONE
-        }*/
+
+        z_xing_scanner.startCameraForAllDevices(this)
     }
 
 
@@ -176,14 +169,6 @@ class MainActivity : AppCompatActivity(),
         proccessBarcodeResult(
                 result.text,
                 result.barcodeFormat.name)
-
-        /*
-         * Caso este trecho não esteja aqui, a câmera
-         * permanecerá travada, como em stopCameraPreview().
-         * */
-        if( !isLocked ){
-            z_xing_scanner.resumeCameraPreview(this)
-        }
     }
 
     private fun proccessBarcodeResult(
@@ -198,6 +183,16 @@ class MainActivity : AppCompatActivity(),
             return
         }
 
+        /*
+         * O código a seguir é essencial para que o ringtone
+         * não seja invocado para um mesmo código de barra
+         * lido seguidas vezes.
+         * */
+        val resultSaved = Database.getSavedResult(this)
+        if( resultSaved == null || !resultSaved.text.equals(text, true) ){
+            notification(this)
+        }
+
         val result = com.google.zxing.Result(
             text,
             text!!.toByteArray(), /* Somente para ter algo */
@@ -209,8 +204,21 @@ class MainActivity : AppCompatActivity(),
 
         /* Modificando interface do usuário. */
         tv_content.text = result.text
-        tv_bar_code_type.text = "Tipo barra de código: ${result.barcodeFormat.name}"
+        processBarcodeType(true, result.barcodeFormat.name)
         processButtonOpen(result)
+
+        /*
+         * Caso este trecho não esteja aqui, a câmera
+         * permanecerá travada, como em stopCameraPreview().
+         * */
+        if( !isLocked ){
+            z_xing_scanner.resumeCameraPreview(this)
+        }
+    }
+
+    private fun processBarcodeType(status: Boolean = false, barcode: String = ""){
+        tv_bar_code_type.text = "Tipo barra de código: $barcode"
+        tv_bar_code_type.visibility = if(status) View.VISIBLE else View.GONE
     }
 
     /*
@@ -264,7 +272,7 @@ class MainActivity : AppCompatActivity(),
      * */
     fun clearContent(view: View? = null){
         tv_content.text = getString(R.string.nothing_read)
-        tv_bar_code_type.visibility = View.GONE
+        processBarcodeType(false)
         bt_open.visibility = View.GONE
         Database.saveResult(this, null)
     }
@@ -307,13 +315,16 @@ class MainActivity : AppCompatActivity(),
         isLightened = !isLightened
 
         if(isLightened){
-            z_xing_scanner.flash = true
+            z_xing_scanner.enableFlash(this, true)
             ib_flashlight.setImageResource(R.drawable.ic_flashlight_white_24dp)
         }
         else{
-            z_xing_scanner.flash = false
+            z_xing_scanner.enableFlash(this, false)
             ib_flashlight.setImageResource(R.drawable.ic_flashlight_off_white_24dp)
         }
+
+        z_xing_scanner.stopCamera()
+        z_xing_scanner.startCamera( if(isLightened) 0 else 1 )
     }
 
     /*
