@@ -9,7 +9,7 @@ import thiengo.com.br.barcodeleitor.R
 import kotlin.concurrent.thread
 
 
-fun unrecognizedCode( context: Context, callbackClear: ()->Unit ){
+fun unrecognizedCode( context: Context, callbackClear: ()->Unit = {} ){
     Toast
         .makeText(
             context,

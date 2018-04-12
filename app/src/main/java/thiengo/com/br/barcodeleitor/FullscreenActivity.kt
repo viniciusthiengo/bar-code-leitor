@@ -31,13 +31,10 @@ class FullscreenActivity : AppCompatActivity(),
         setContentView(R.layout.activity_fullscreen)
 
         /*
-         * O código abaixo é para garantir que ib_lock.tag e
-         * ib_flashlight.tag sempre terão um valor Boolean
-         * depois do onCreate().
+         * O código abaixo é para garantir que ib_lock.tag
+         * sempre terá um valor Boolean depois do onCreate().
          * */
         ib_lock.tag = if(ib_lock.tag == null) false else (ib_lock.tag as Boolean)
-        ib_flashlight.tag = false /* O primeiro valor de ib_flashlight.tag depois do onCreate() é de busca assíncrona. */
-
         if( savedInstanceState != null ){
             ib_lock.tag = savedInstanceState.getBoolean(KEY_IS_LOCKED)
         }
@@ -58,6 +55,7 @@ class FullscreenActivity : AppCompatActivity(),
          * da câmera como ativa / não ativa,
          * status vindo da atividade anterior.
          * */
+        ib_flashlight.tag = false /* Garantindo um valor inicial. */
         if( intent != null ){
             ib_flashlight.tag = !intent.getBooleanExtra(Database.KEY_IS_LIGHTENED, false)
             flashLight()
@@ -73,17 +71,22 @@ class FullscreenActivity : AppCompatActivity(),
             lockUnlock()
         }
 
-        /*
-         * Caso a linha de código abaixo não esteja presente,
-         * em algumas versões do Android está atividade também
-         * ficará travada em portrait screen devido ao uso
-         * desta trava no AndroidManifest.xml, mesmo que a trava
-         * esteja definida somente para a atividade principal.
-         * Outra, a invocação da linha abaixo somente pode
-         * ocorrer depois que a câmera já está em funcionamento
-         * na tela, caso contrário a câmera não funcionará.
-         * */
-        setRequestedOrientation( ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR )
+        z_xing_scanner.threadCallWhenCameraIsWorking{
+            runOnUiThread {
+                /*
+                 * Caso a linha de código abaixo não esteja presente,
+                 * em algumas versões do Android está atividade também
+                 * ficará travada em portrait screen devido ao uso
+                 * desta trava no AndroidManifest.xml, mesmo que a trava
+                 * esteja definida somente para a atividade principal.
+                 * Outra, a invocação da linha abaixo deve ocorrer
+                 * depois que a câmera já está em funcionamento
+                 * na tela, caso contrário há a possibilidade de a
+                 * câmera não funcionar em alguns devices.
+                 * */
+                setRequestedOrientation( ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR )
+            }
+        }
     }
 
     override fun onPause() {
@@ -116,17 +119,16 @@ class FullscreenActivity : AppCompatActivity(),
          * do método handleResult().
          * */
         if( result == null ){
-            unrecognizedCode(this, {})
+            unrecognizedCode(this)
             return
         }
 
         proccessBarcodeResult( result )
-        z_xing_scanner.resumeCameraPreview(this)
     }
 
-    fun proccessBarcodeResult( result: Result? = null ){
-        val text = result?.text
-        val barcodeName = result?.barcodeFormat?.name
+    fun proccessBarcodeResult( result: Result ){
+        val text = result.text
+        val barcodeName = result.barcodeFormat.name
 
         val i = Intent()
         i.putExtra( Database.KEY_NAME, text )

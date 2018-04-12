@@ -154,8 +154,8 @@ class MainActivity : AppCompatActivity(),
     }
 
 
-    /* *** Algoritmos de interpretação de barra de código *** */
-    override fun handleResult(result: com.google.zxing.Result?) {
+    /* *** Algoritmos de interpretação de código de barras *** */
+    override fun handleResult(result: Result?) {
         /*
          * Padrão Cláusula de Guarda - Caso o resultado seja
          * null, limpa a tela, se houver um último dado lido,
@@ -173,8 +173,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun processBarcodeResult(
-            text: String? = null,
-            barcodeFormatName: String = "QRCODE" ){
+            text: String,
+            barcodeFormatName: String ){
 
         /*
          * O código a seguir é essencial para que o ringtone
@@ -188,7 +188,7 @@ class MainActivity : AppCompatActivity(),
 
         val result = Result(
             text,
-            text!!.toByteArray(), /* Somente para ter algo */
+            text.toByteArray(), /* Somente para ter algo */
             arrayOf(), /* Somente para ter algo */
             BarcodeFormat.valueOf(barcodeFormatName))
 
@@ -261,7 +261,7 @@ class MainActivity : AppCompatActivity(),
         tv_content.text = getString(R.string.nothing_read)
         processBarcodeType(false)
         setButtonOpenAction(status = false)
-        Database.saveResult(this, null)
+        Database.saveResult(this)
     }
 
     /*

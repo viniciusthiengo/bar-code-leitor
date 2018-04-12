@@ -4,9 +4,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Camera
+import android.os.SystemClock
+import android.view.View
 import com.google.zxing.BarcodeFormat
 import me.dm7.barcodescanner.core.CameraUtils
 import me.dm7.barcodescanner.zxing.ZXingScannerView
+import kotlin.concurrent.thread
 
 
 fun ZXingScannerView.startCameraForAllDevices(context: Context){
@@ -58,7 +61,6 @@ private fun ZXingScannerView.configCameraForAllDevices(context: Context){
      * dependendo da rotação, a leitura perde em eficiência.
      * */
     this.rotation = 0.0F
-    //this.rotation = 45.0F
 
     /*
      * Para definir os códigos que podem ser lidos - por
@@ -98,7 +100,9 @@ private fun ZXingScannerView.releaseForAllDevices(){
      * funcionará.
      * */
     val camera = CameraUtils.getCameraInstance()
-    (camera as Camera).release()
+    if( camera != null ){
+        (camera as Camera).release()
+    }
 }
 
 /*
@@ -133,5 +137,19 @@ fun ZXingScannerView.enableFlash(
 
     if( this.isFlashSupported(context) ){
         this.flash = status
+    }
+}
+
+/*
+ * Para métodos em que é seguro invoca-los somente
+ * depois que a câmera está funcionando em tela.
+ * */
+fun ZXingScannerView.threadCallWhenCameraIsWorking(callback: ()->Unit){
+    thread {
+        while( !this.isShown ){
+            SystemClock.sleep(1000) /* 1 segundo foi o tempo ideal para não parar com o funcionamento da câmera. */
+        }
+
+        callback()
     }
 }
