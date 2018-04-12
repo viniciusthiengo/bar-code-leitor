@@ -2,11 +2,8 @@ package thiengo.com.br.barcodeleitor.util
 
 import android.content.Context
 import android.media.RingtoneManager
-import android.os.SystemClock
-import android.view.View
 import android.widget.Toast
 import thiengo.com.br.barcodeleitor.R
-import kotlin.concurrent.thread
 
 
 fun unrecognizedCode( context: Context, callbackClear: ()->Unit = {} ){

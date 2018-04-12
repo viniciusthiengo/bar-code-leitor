@@ -4,9 +4,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Camera
+import android.os.Build
 import android.os.SystemClock
-import android.view.View
-import com.google.zxing.BarcodeFormat
 import me.dm7.barcodescanner.core.CameraUtils
 import me.dm7.barcodescanner.zxing.ZXingScannerView
 import kotlin.concurrent.thread
@@ -42,7 +41,7 @@ private fun ZXingScannerView.configCameraForAllDevices(context: Context){
      * Somente funciona se a câmera não estiver
      * ativa.
      * */
-    this.setBackgroundColor(Color.TRANSPARENT)
+    //this.setBackgroundColor(Color.TRANSPARENT)
 
     this.setBorderColor(Color.RED) /* Cor das extremidades */
     this.setLaserColor(Color.YELLOW) /* Cor da linha central de alinhamento com código de barra */
@@ -71,9 +70,15 @@ private fun ZXingScannerView.configCameraForAllDevices(context: Context){
 
     /*
      * Deve ser utilizado somente para o correto funcionamento
-     * do CameraPreview em devices HUAWEI.
+     * do CameraPreview em devices HUAWEI. Ou seja, crie também
+     * um código de verificação de marca de device, pois a linha
+     * abaixo, quando utilizada em aparelhos que não sejam HUAWEI,
+     * diminui a acurácia da leitura de código.
      * */
-    this.setAspectTolerance(0.5F)
+    val brand = Build.MANUFACTURER
+    if( brand.equals("HUAWEI", true) ){
+        this.setAspectTolerance(0.5F)
+    }
 }
 
 fun ZXingScannerView.stopCameraForAllDevices(){
@@ -146,7 +151,7 @@ fun ZXingScannerView.enableFlash(
  * */
 fun ZXingScannerView.threadCallWhenCameraIsWorking(callback: ()->Unit){
     thread {
-        while( !this.isShown ){
+        while( !this.isShown() ){
             SystemClock.sleep(1000) /* 1 segundo foi o tempo ideal para não parar com o funcionamento da câmera. */
         }
 
