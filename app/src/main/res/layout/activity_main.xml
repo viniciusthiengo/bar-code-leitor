@@ -35,7 +35,7 @@
                 android:layout_marginRight="8dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/image_button_black"
-                android:contentDescription="Colocar em modo fullscreen"
+                android:contentDescription="@string/fullscreen_mode"
                 android:onClick="openFullscreen"
                 android:padding="8dp"
                 android:scaleType="fitCenter"
@@ -51,7 +51,7 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginRight="8dp"
                 android:background="@drawable/image_button_black"
-                android:contentDescription="Ligar flash"
+                android:contentDescription="@string/turn_on_flash"
                 android:onClick="flashLight"
                 android:padding="8dp"
                 android:scaleType="fitCenter"
@@ -67,7 +67,7 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginRight="8dp"
                 android:background="@drawable/image_button_black"
-                android:contentDescription="Travar leitura de barra de código"
+                android:contentDescription="@string/lock_code_reader"
                 android:onClick="lockUnlock"
                 android:padding="8dp"
                 android:scaleType="fitCenter"
@@ -81,17 +81,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/fl_scanner"
-            android:background="#f0f0f0"
+            android:background="@color/backgroundLightGrey"
             android:orientation="horizontal"
             android:padding="16dp">
 
             <ImageView
                 android:layout_width="18dp"
                 android:layout_height="18dp"
-                android:contentDescription="Informação"
+                android:contentDescription="@string/info"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_info_outline_black_18dp"
-                android:tint="#888888" />
+                android:tint="@color/tintIconGrey" />
 
             <TextView
                 android:layout_width="0dp"
@@ -99,8 +99,8 @@
                 android:layout_marginLeft="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Posicione a câmera corretamente sobre o código para que a leitura seja realizada."
-                android:textColor="#888"
+                android:text="@string/info_description"
+                android:textColor="@color/tintIconGrey"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -114,15 +114,15 @@
             android:layout_marginLeft="16dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
-            android:text="Conteúdo da última leitura:" />
+            android:text="@string/last_content_read" />
 
         <LinearLayout
-            android:background="@android:color/white"
             android:id="@+id/ll_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_below="@+id/tv_label"
+            android:background="@android:color/white"
             android:orientation="vertical"
             android:paddingBottom="16dp"
             android:paddingLeft="16dp"
@@ -146,7 +146,7 @@
                     android:background="@drawable/text_view_content_border"
                     android:gravity="center"
                     android:padding="12dp"
-                    android:text="Nada lido ainda" />
+                    android:text="@string/nothing_read" />
 
                 <TextView
                     android:id="@+id/tv_bar_code_type"
@@ -155,7 +155,7 @@
                     android:layout_alignLeft="@+id/tv_content"
                     android:layout_alignStart="@+id/tv_content"
                     android:layout_below="@+id/tv_content"
-                    android:text="Tipo barra de código: QRCode"
+                    android:text="@string/barcode_format"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
@@ -170,7 +170,7 @@
                     android:layout_marginLeft="16dp"
                     android:layout_marginStart="16dp"
                     android:background="@drawable/image_button_delete"
-                    android:contentDescription="Limpar área de conteúdo lido"
+                    android:contentDescription="@string/clear_content_read"
                     android:onClick="clearContent"
                     android:padding="8dp"
                     android:scaleType="fitCenter"
@@ -184,7 +184,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:background="@color/colorPrimary"
-                android:text="ABRIR URL"
+                android:text="@string/open_url"
                 android:textColor="@android:color/white"
                 android:visibility="gone" />
         </LinearLayout>

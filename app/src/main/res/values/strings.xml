@@ -1,4 +1,20 @@
 <resources>
     <string name="app_name">BarCodeLeitor</string>
+    <string name="fullscreen_mode">Colocar em modo fullscreen</string>
+    <string name="turn_on_flash">Ligar flash</string>
+    <string name="lock_code_reader">Travar leitura de barra de código</string>
+    <string name="info">Informação</string>
+    <string name="info_description">Posicione a câmera corretamente sobre o código para que a leitura seja realizada.</string>
+    <string name="last_content_read">Conteúdo da última leitura:</string>
     <string name="nothing_read">Nada lido ainda</string>
+    <string name="barcode_format">Tipo barra de código: </string>
+    <string name="clear_content_read">Limpar área de conteúdo lido</string>
+    <string name="open_url">ABRIR URL</string>
+    <string name="close_fullscreen_mode">Sair de modo fullscreen</string>
+    <string name="open_email">ABRIR EMAIL</string>
+    <string name="open_call">LIGAR</string>
+    <string name="request_permission_description">A permissão de uso de camera é necessária para que o aplicativo funcione.</string>
+    <string name="request_permission_button_ok">Ok</string>
+    <string name="request_permission_button_cancel">Cancelar</string>
+    <string name="unrecognized_code">Código não reconhecido.</string>
 </resources>

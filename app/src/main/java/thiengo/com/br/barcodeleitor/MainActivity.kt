@@ -6,9 +6,12 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.webkit.URLUtil
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.Result
 import kotlinx.android.synthetic.main.activity_main.*
 import me.dm7.barcodescanner.zxing.ZXingScannerView
 import pub.devrel.easypermissions.EasyPermissions
@@ -20,10 +23,8 @@ class MainActivity : AppCompatActivity(),
         ZXingScannerView.ResultHandler,
         EasyPermissions.PermissionCallbacks {
 
-    val REQUEST_CODE_CAMERA = 182
-    val REQUEST_CODE_FULLSCREEN = 184
-    var isLocked = false
-    var isLightened = false
+    val REQUEST_CODE_CAMERA = 182 /* Inteiro aleatório */
+    val REQUEST_CODE_FULLSCREEN = 184 /* Inteiro aleatório */
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +43,7 @@ class MainActivity : AppCompatActivity(),
     private fun lastResultVerification(){
         val result = Database.getSavedResult(this)
         if( result != null ){
-            proccessBarcodeResult( result.text, result.barcodeFormat.name )
+            processBarcodeResult( result.text, result.barcodeFormat.name )
         }
     }
 
@@ -94,11 +95,11 @@ class MainActivity : AppCompatActivity(),
              * status controlado por ele continuem com os
              * valores corretos.
              * */
-            isLightened = !data!!.getBooleanExtra(Database.KEY_IS_LIGHTENED, false)
+            ib_flashlight.tag = !data!!.getBooleanExtra(Database.KEY_IS_LIGHTENED, false)
             flashLight()
 
             if( resultCode == Activity.RESULT_OK ){
-                proccessBarcodeResult(
+                processBarcodeResult(
                     data.getStringExtra(Database.KEY_NAME),
                     data.getStringExtra(Database.KEY_BARCODE_NAME) )
             }
@@ -130,11 +131,11 @@ class MainActivity : AppCompatActivity(),
 
     private fun askCameraPermission(){
         EasyPermissions.requestPermissions(
-                PermissionRequest.Builder(this, REQUEST_CODE_CAMERA, Manifest.permission.CAMERA)
-                        .setRationale("A permissão de uso de camera é necessária para que o aplicativo funcione.")
-                        .setPositiveButtonText("Ok")
-                        .setNegativeButtonText("Cancelar")
-                        .build() )
+            PermissionRequest.Builder(this, REQUEST_CODE_CAMERA, Manifest.permission.CAMERA)
+                .setRationale( getString(R.string.request_permission_description) )
+                .setPositiveButtonText( getString(R.string.request_permission_button_ok) )
+                .setNegativeButtonText( getString(R.string.request_permission_button_cancel) )
+                .build() )
     }
 
     override fun onPermissionsGranted(
@@ -166,22 +167,14 @@ class MainActivity : AppCompatActivity(),
             return
         }
 
-        proccessBarcodeResult(
+        processBarcodeResult(
                 result.text,
                 result.barcodeFormat.name)
     }
 
-    private fun proccessBarcodeResult(
+    private fun processBarcodeResult(
             text: String? = null,
             barcodeFormatName: String = "QRCODE" ){
-        /*
-         * Padrão Claúsula de Guarda sendo utilizado para
-         * que a leitura do código não continue caso o
-         * usuário tenha travado a CameraPreview.
-         * */
-        if( isLocked ){
-            return
-        }
 
         /*
          * O código a seguir é essencial para que o ringtone
@@ -193,11 +186,11 @@ class MainActivity : AppCompatActivity(),
             notification(this)
         }
 
-        val result = com.google.zxing.Result(
+        val result = Result(
             text,
             text!!.toByteArray(), /* Somente para ter algo */
             arrayOf(), /* Somente para ter algo */
-            com.google.zxing.BarcodeFormat.valueOf(barcodeFormatName))
+            BarcodeFormat.valueOf(barcodeFormatName))
 
         /* Salvando o último resultado lido. */
         Database.saveResult(this, result)
@@ -207,17 +200,11 @@ class MainActivity : AppCompatActivity(),
         processBarcodeType(true, result.barcodeFormat.name)
         processButtonOpen(result)
 
-        /*
-         * Caso este trecho não esteja aqui, a câmera
-         * permanecerá travada, como em stopCameraPreview().
-         * */
-        if( !isLocked ){
-            z_xing_scanner.resumeCameraPreview(this)
-        }
+        z_xing_scanner.resumeCameraPreview(this)
     }
 
     private fun processBarcodeType(status: Boolean = false, barcode: String = ""){
-        tv_bar_code_type.text = "Tipo barra de código: $barcode"
+        tv_bar_code_type.text = getString(R.string.barcode_format) + barcode
         tv_bar_code_type.visibility = if(status) View.VISIBLE else View.GONE
     }
 
@@ -225,22 +212,22 @@ class MainActivity : AppCompatActivity(),
      * Verificação de tipo de conteúdo lido em código de
      * barra para o correto trabalho com o botão de ação.
      * */
-    private fun processButtonOpen(result: com.google.zxing.Result){
+    private fun processButtonOpen(result: Result){
         when{
             URLUtil.isValidUrl(result.text) ->
-                setButtonOpenAction("ABRIR URL") {
+                setButtonOpenAction(resources.getString(R.string.open_url)) {
                     val i = Intent(Intent.ACTION_VIEW)
                     i.data = Uri.parse(result.text)
                     startActivity(i)
                 }
             Patterns.EMAIL_ADDRESS.matcher(result.text).matches() ->
-                setButtonOpenAction("ABRIR EMAIL") {
+                setButtonOpenAction( getString(R.string.open_email) ) {
                     val i = Intent(Intent.ACTION_VIEW)
                     i.data = Uri.parse("mailto:?body=${result.text}")
                     startActivity(i)
                 }
             Patterns.PHONE.matcher(result.text).matches() ->
-                setButtonOpenAction("LIGAR") {
+                setButtonOpenAction( getString(R.string.open_call) ) {
                     val i = Intent(Intent.ACTION_DIAL)
                     i.data = Uri.parse("tel:${result.text}")
                     startActivity(i)
@@ -273,7 +260,7 @@ class MainActivity : AppCompatActivity(),
     fun clearContent(view: View? = null){
         tv_content.text = getString(R.string.nothing_read)
         processBarcodeType(false)
-        bt_open.visibility = View.GONE
+        setButtonOpenAction(status = false)
         Database.saveResult(this, null)
     }
 
@@ -292,8 +279,16 @@ class MainActivity : AppCompatActivity(),
 
         unlockCamera()
 
+        /*
+         * A linha de código abaixo é necessária para
+         * que não haja o risco de uma exception caso
+         * o usuário abra o aplicativo e já ative a
+         * tela de fullscreen.
+         * */
+        val value = if(ib_flashlight.tag == null) false else (ib_flashlight.tag as Boolean)
+
         val i = Intent(this, FullscreenActivity::class.java)
-        i.putExtra(Database.KEY_IS_LIGHTENED, isLightened)
+        i.putExtra(Database.KEY_IS_LIGHTENED, value)
         startActivityForResult(i, REQUEST_CODE_FULLSCREEN)
     }
 
@@ -303,7 +298,7 @@ class MainActivity : AppCompatActivity(),
      * ocorrendo, caso esteja a câmera como lock.
      * */
     private fun unlockCamera(){
-        isLocked = true
+        ib_lock.tag = true
         lockUnlock()
     }
 
@@ -312,9 +307,17 @@ class MainActivity : AppCompatActivity(),
      * disponível no device.
      * */
     fun flashLight(view: View? = null){
-        isLightened = !isLightened
+        /*
+         * Utilizando a propriedade tag de Button para salvar o
+         * valor atual do status de luz de flash.
+         * */
+        val value = if(ib_flashlight.tag == null)
+            true
+        else
+            !(ib_flashlight.tag as Boolean)
+        ib_flashlight.tag = value /* Sempre o inverso do valor de entrada. */
 
-        if(isLightened){
+        if(value){
             z_xing_scanner.enableFlash(this, true)
             ib_flashlight.setImageResource(R.drawable.ic_flashlight_white_24dp)
         }
@@ -322,9 +325,6 @@ class MainActivity : AppCompatActivity(),
             z_xing_scanner.enableFlash(this, false)
             ib_flashlight.setImageResource(R.drawable.ic_flashlight_off_white_24dp)
         }
-
-        z_xing_scanner.stopCamera()
-        z_xing_scanner.startCamera( if(isLightened) 0 else 1 )
     }
 
     /*
@@ -336,9 +336,19 @@ class MainActivity : AppCompatActivity(),
      * se a CameraPreview estiver parada, stopped.
      * */
     fun lockUnlock(view: View? = null){
-        isLocked = !isLocked
+        /*
+         * Utilizando a propriedade tag de Button para salvar o
+         * valor atual do lock de leitura de código, assim não
+         * temos a necessidade de trabalho com uma nova variável
+         * de instância somente para manter este valor.
+         * */
+        val value = if(ib_lock.tag == null)
+                true
+            else
+                !(ib_lock.tag as Boolean)
+        ib_lock.tag = value /* Sempre o inverso do valor de entrada. */
 
-        if(isLocked){
+        if( value ){
             /*
              * Para funcionar deve ser invocado antes do
              * stopCameraPreview().
@@ -371,7 +381,7 @@ class MainActivity : AppCompatActivity(),
      * o lock de tela ocorre.
      * */
     private fun turnOffFlashlight(){
-        isLightened = true
+        ib_flashlight.tag = true
         flashLight()
     }
 }

@@ -25,12 +25,14 @@ dependencies {
     implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     implementation 'com.android.support:appcompat-v7:27.1.1'
 
-    implementation 'me.dm7.barcodescanner:zbar:1.9.8'
-    implementation 'me.dm7.barcodescanner:zxing:1.9.8'
+    //implementation 'me.dm7.barcodescanner:zbar:1.9.8'
+    //implementation 'me.dm7.barcodescanner:zxing:1.9.8'
 
-    /*implementation('me.dm7.barcodescanner:zbar:1.9.8') {
-        exclude module: 'com.android.support'
-    }*/
+    implementation('me.dm7.barcodescanner:zxing:1.9.8') {
+        //exclude group: 'com.android.support'
+        //exclude module: 'support-media-compat'
+        exclude module: 'support-v4'
+    }
 
     implementation 'pub.devrel:easypermissions:1.2.0'
 }

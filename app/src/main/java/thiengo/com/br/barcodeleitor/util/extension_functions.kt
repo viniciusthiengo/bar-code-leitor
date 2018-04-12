@@ -4,12 +4,13 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Camera
+import com.google.zxing.BarcodeFormat
 import me.dm7.barcodescanner.core.CameraUtils
 import me.dm7.barcodescanner.zxing.ZXingScannerView
 
 
 fun ZXingScannerView.startCameraForAllDevices(context: Context){
-    this.confiCameraForAllDevices(context)
+    this.configCameraForAllDevices(context)
 
     /*
      * Sem nenhum parâmetro definido em startCamera(),
@@ -33,7 +34,7 @@ fun ZXingScannerView.startCameraForAllDevices(context: Context){
  * configurações no método a seguir são opcionais e têm
  * seus valores padrões.
  * */
-private fun ZXingScannerView.confiCameraForAllDevices(context: Context){
+private fun ZXingScannerView.configCameraForAllDevices(context: Context){
     /*
      * Somente funciona se a câmera não estiver
      * ativa.
@@ -42,7 +43,7 @@ private fun ZXingScannerView.confiCameraForAllDevices(context: Context){
 
     this.setBorderColor(Color.RED) /* Cor das extremidades */
     this.setLaserColor(Color.YELLOW) /* Cor da linha central de alinhamento com código de barra */
-    // this.setMaskColor(Color.GRAY) /* Cor de todo o restante fora do quadrante de leitura de código. */
+    //this.setMaskColor(Color.BLUE) /* Cor de todo o restante fora do quadrante de leitura de código. */
 
     /*
      * Sem o auto focus como true o poder de leitura de
@@ -57,6 +58,14 @@ private fun ZXingScannerView.confiCameraForAllDevices(context: Context){
      * dependendo da rotação, a leitura perde em eficiência.
      * */
     this.rotation = 0.0F
+    //this.rotation = 45.0F
+
+    /*
+     * Para definir os códigos que podem ser lidos - por
+     * padrão todos os códigos suportados são passíveis de
+     * serem lidos.
+     * */
+    //this.setFormats( listOf(BarcodeFormat.QR_CODE, BarcodeFormat.DATA_MATRIX) )
 
     /*
      * Deve ser utilizado somente para o correto funcionamento
@@ -89,9 +98,7 @@ private fun ZXingScannerView.releaseForAllDevices(){
      * funcionará.
      * */
     val camera = CameraUtils.getCameraInstance()
-    if( camera != null ){
-        (camera as Camera).release()
-    }
+    (camera as Camera).release()
 }
 
 /*
@@ -107,7 +114,7 @@ fun ZXingScannerView.isCameraStarted(): Boolean{
 }
 
 /*
- * Como alguns deveices não têm a luz de flash, é
+ * Como alguns devices não têm a luz de flash, é
  * necessária a verificação para a não geração de
  * exception.
  * */

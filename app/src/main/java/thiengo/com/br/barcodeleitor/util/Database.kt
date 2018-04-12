@@ -14,7 +14,7 @@ class Database {
 
         val KEY_IS_LIGHTENED = "is_lightened"
 
-        fun saveResult(context: Context, result: Result?){
+        fun saveResult(context: Context, result: Result?) {
             val sp = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             val contents = result?.text
             val barcodeName = result?.barcodeFormat?.name ?: DEFAULT_BARCODE_NAME
@@ -29,16 +29,17 @@ class Database {
             val sp = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             val text = sp.getString(KEY_NAME, null)
 
-            if( text == null ){
+            if (text == null) {
                 return null
             }
 
-            val barcodeFormat = BarcodeFormat.valueOf( sp.getString(KEY_BARCODE_NAME, DEFAULT_BARCODE_NAME) )
+            val barcodeFormat = BarcodeFormat
+                    .valueOf(sp.getString(KEY_BARCODE_NAME, DEFAULT_BARCODE_NAME))
             val result = Result(
                 text,
                 text.toByteArray(),
                 arrayOf(),
-                barcodeFormat )
+                barcodeFormat)
 
             return result
         }

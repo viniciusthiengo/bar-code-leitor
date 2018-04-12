@@ -18,8 +18,6 @@ class FullscreenActivity : AppCompatActivity(),
         ZXingScannerView.ResultHandler {
 
     val KEY_IS_LOCKED = "is_locked"
-    var isLocked = false
-    var isLightened = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,14 +30,22 @@ class FullscreenActivity : AppCompatActivity(),
 
         setContentView(R.layout.activity_fullscreen)
 
+        /*
+         * O código abaixo é para garantir que ib_lock.tag e
+         * ib_flashlight.tag sempre terão um valor Boolean
+         * depois do onCreate().
+         * */
+        ib_lock.tag = if(ib_lock.tag == null) false else (ib_lock.tag as Boolean)
+        ib_flashlight.tag = false /* O primeiro valor de ib_flashlight.tag depois do onCreate() é de busca assíncrona. */
+
         if( savedInstanceState != null ){
-            isLocked = savedInstanceState.getBoolean(KEY_IS_LOCKED)
+            ib_lock.tag = savedInstanceState.getBoolean(KEY_IS_LOCKED)
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putBoolean(KEY_IS_LOCKED, isLocked)
+        outState.putBoolean(KEY_IS_LOCKED, ib_lock.tag as Boolean)
     }
 
     override fun onResume() {
@@ -47,41 +53,37 @@ class FullscreenActivity : AppCompatActivity(),
         z_xing_scanner.setResultHandler(this)
         startCamera()
 
-        threadCallWhenCameraIsWorking(z_xing_scanner, {
-            runOnUiThread {
-                /*
-                 * Para manter os status da luz de flash
-                 * da câmera como ativa / não ativa,
-                 * status vindo da atividade anterior.
-                 * */
-                if( intent != null ){
-                    isLightened = !intent.getBooleanExtra(Database.KEY_IS_LIGHTENED, false)
-                    flashLight()
-                }
+        /*
+         * Para manter os status da luz de flash
+         * da câmera como ativa / não ativa,
+         * status vindo da atividade anterior.
+         * */
+        if( intent != null ){
+            ib_flashlight.tag = !intent.getBooleanExtra(Database.KEY_IS_LIGHTENED, false)
+            flashLight()
+        }
 
-                /*
-                 * Necessário para manter o status da trava
-                 * da câmera, ativa / não ativa, quando houver
-                 * reconstrução de atividade.
-                 * */
-                if(isLocked){
-                    isLocked = !isLocked
-                    lockUnlock()
-                }
+        /*
+         * Necessário para manter o status da trava
+         * da câmera, ativa / não ativa, quando houver
+         * reconstrução de atividade.
+         * */
+        if(ib_lock.tag as Boolean){
+            ib_lock.tag = !(ib_lock.tag as Boolean)
+            lockUnlock()
+        }
 
-                /*
-                 * Caso a linha de código abaixo não esteja presente,
-                 * em algumas versões do Android está atividade também
-                 * ficará travada em portrait screen devido ao uso
-                 * desta trava no AndroidManifest.xml, mesmo que a trava
-                 * esteja definida somente para a atividade principal.
-                 * Outra, a invocação da linha abaixo somente pode
-                 * ocorrer depois que a câmera já está em funcionamento
-                 * na tela, caso contrário a câmera não funcionará.
-                 * */
-                setRequestedOrientation( ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR )
-            }
-        })
+        /*
+         * Caso a linha de código abaixo não esteja presente,
+         * em algumas versões do Android está atividade também
+         * ficará travada em portrait screen devido ao uso
+         * desta trava no AndroidManifest.xml, mesmo que a trava
+         * esteja definida somente para a atividade principal.
+         * Outra, a invocação da linha abaixo somente pode
+         * ocorrer depois que a câmera já está em funcionamento
+         * na tela, caso contrário a câmera não funcionará.
+         * */
+        setRequestedOrientation( ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR )
     }
 
     override fun onPause() {
@@ -123,15 +125,6 @@ class FullscreenActivity : AppCompatActivity(),
     }
 
     fun proccessBarcodeResult( result: Result? = null ){
-        /*
-         * Padrão Claúsula de Guarda sendo utilizado para
-         * que a leitura do código não continue caso o
-         * usuário tenha travado a CameraPreview.
-         * */
-        if( isLocked ){
-            return
-        }
-
         val text = result?.text
         val barcodeName = result?.barcodeFormat?.name
 
@@ -146,7 +139,7 @@ class FullscreenActivity : AppCompatActivity(),
      * fazendo parte do conteúdo de resposta.
      * */
     fun finish(intent: Intent, resultAction: Int) {
-        intent.putExtra(Database.KEY_IS_LIGHTENED, isLightened)
+        intent.putExtra(Database.KEY_IS_LIGHTENED, ib_flashlight.tag as Boolean)
         setResult( resultAction, intent )
         finish()
     }
@@ -169,7 +162,7 @@ class FullscreenActivity : AppCompatActivity(),
      * ocorrendo, caso esteja como lock, a câmera.
      * */
     private fun unlockCamera(){
-        isLocked = true
+        ib_lock.tag = true
         lockUnlock()
     }
 
@@ -178,10 +171,17 @@ class FullscreenActivity : AppCompatActivity(),
      * disponível.
      * */
     fun flashLight(view: View? = null){
-        isLightened = !isLightened
-        intent.putExtra(Database.KEY_IS_LIGHTENED, isLightened)
+        ib_flashlight.tag = !(ib_flashlight.tag as Boolean)
 
-        if(isLightened){
+        /*
+         * A linha de código abaixo é necessária, pois caso haja
+         * uma reconstrução de atividade o valor obtido para
+         * ib_flashlight.tag vem da intent em memória, então a
+         * intent tem que estar com o valor atual.
+         * */
+        intent.putExtra(Database.KEY_IS_LIGHTENED, ib_flashlight.tag as Boolean)
+
+        if(ib_flashlight.tag as Boolean){
             z_xing_scanner.enableFlash(this, true)
             ib_flashlight.setImageResource(R.drawable.ic_flashlight_white_24dp)
         }
@@ -199,9 +199,9 @@ class FullscreenActivity : AppCompatActivity(),
      * código.
      * */
     fun lockUnlock(view: View? = null){
-        isLocked = !isLocked
+        ib_lock.tag = !(ib_lock.tag as Boolean)
 
-        if(isLocked){
+        if(ib_lock.tag as Boolean){
             /*
              * Para funcionar deve ser invocado antes do
              * stopCameraPreview().
@@ -226,7 +226,7 @@ class FullscreenActivity : AppCompatActivity(),
      * de tela ocorre.
      * */
     private fun turnOffFlashlight(){
-        isLightened = true
+        ib_flashlight.tag = true
         flashLight()
     }
 }
