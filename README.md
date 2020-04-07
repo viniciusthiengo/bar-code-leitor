@@ -1,4 +1,4 @@
-# SuperPlacar Web Version (Kotlin Android)
+# BarCodeLeitor (Kotlin Android)
 
 Projeto Kotlin Android da segunda parte do artigo [Leitor de Códigos no Android com Barcode Scanner API - ZXing](https://www.thiengo.com.br/leitor-de-codigos-no-android-com-barcode-scanner-api-zxing#title-21) do Blog [Thiengo.com.br](https://www.thiengo.com.br).
 
